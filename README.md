@@ -6,7 +6,7 @@ Requires Metrix++ at location: metrixplusplus-1.3.168/metrix++.py
 
 Run with:
 
-./android-static-analyzer/get_data.py <CODE-PATH> <PATH-TO-FILE> <FILE>
+./android-static-analyzer/get_data.py CODE-PATH PATH-TO-FILE FILE
 
 Example:
 
