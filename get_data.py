@@ -124,6 +124,17 @@ def get_MFA(file_name):
 #     matches = re.findall('^(\s*)public.*\w*\w*\(.*\) \{\n\{\n((\t.*\n)|(^$\n))*^(\s*)\}',s)
 #     print(matches)
 
+def get_rfc(file_name):
+    number_of_methods = 0
+    with open(file_name, 'r') as f:
+        s = f.read()
+        m = re.findall('(?:public|private|protected) \w* \w*\([^(^)^{^}]*\).*{',s)
+        methods = map(lambda x: re.findall('\w*\(',x)[0], m)
+        numbers = map(lambda x: sh.grep(" " + x,file_name,'-c'), methods)
+        count = reduce(lambda x, y: int(x) + int(y), numbers)
+        rfc = count-len(m)
+    return rfc
+
 # average_complexity = get_float(average[0])
 # total_complexity = get_float(total[0])
 # average_lines = get_float(average[1])
@@ -149,13 +160,14 @@ print(get_column(total_lines) +
       get_column(total_comments) +
       get_column(total_lines/number_of_methods) +
       get_column(total_comments/(total_comments+total_lines)) +
-      get_column("rfc") +
+      get_column(get_rfc(file_name)) +
       get_column(affCoupling) +
       get_column(effCoupling) +
       get_column(affCoupling + effCoupling) +
-      get_column("DIT") +
+      #See if there are any changes
+      get_column(str(get_depth_of_inheritance_tree_local(file_name))) +
       get_column("LCOM") +
-      get_column("MFA: " + str(get_MFA(file_name))) +
-      get_column("NBD") +
+      get_column("MFA: might be wrong" + str(get_MFA(file_name))) +
+      get_column("NBD nesting depht") +
       get_column(number_of_overriden_methods/number_of_methods) +
-      get_column("NSC"))
+      get_column(subclasses))
