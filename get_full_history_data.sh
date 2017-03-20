@@ -1,5 +1,4 @@
 #!/bin/bash
-#source venv/bin/activate
 touch commits.txt
 
 if (( $# != 3 ));then
@@ -20,5 +19,4 @@ while read p; do
     python ../../android-static-analyzer/get_data.py $1 $2 $3
 done <commits.txt
 
-#rm commits.txt
-#deactivate
+rm commits.txt
