@@ -44,8 +44,8 @@ def get_number_of_overriden_methods(file_name):
     return number_of_overriden_methods
 
 
-sh.python("metrixplusplus-1.3.168/metrix++.py", "collect", "--std.code.lines.code", "--std.code.complexity.cyclomatic", "--std.code.lines.comments", file_name)
-temp = sh.python("metrixplusplus-1.3.168/metrix++.py", "view")
+sh.python("../../metrixplusplus-1.3.168/metrix++.py", "collect", "--std.code.lines.code", "--std.code.complexity.cyclomatic", "--std.code.lines.comments", file_name)
+temp = sh.python("../../metrixplusplus-1.3.168/metrix++.py", "view")
 average = re.findall('Average.*',str(temp))
 total = re.findall('Total.*', str(temp))
 
