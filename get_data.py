@@ -25,7 +25,6 @@ def get_number_of_methods(file_name):
         s = f.read()
         method_regex = '(?: )+?(?:public|private|protected) \w* \w*\([^(^)^{^}]*\).*{'
         matches = re.findall(method_regex,s)
-        print matches
         number_of_methods = len(matches)
     return number_of_methods
 
@@ -49,7 +48,7 @@ def get_number_of_overriden_methods(file_name):
 
 sh.python("../../metrixplusplus-1.3.168/metrix++.py", "collect", "--std.code.lines.code", "--std.code.complexity.cyclomatic", "--std.code.lines.comments", file_name)
 temp = sh.python("../../metrixplusplus-1.3.168/metrix++.py", "view")
-average = re.findall('Average.*',str(temp))
+average = re.findall('Average.*', str(temp))
 total = re.findall('Total.*', str(temp))
 
 average_complexity = get_float(average[0])
@@ -146,8 +145,8 @@ def update_nesting(line, curr):
     closing = re.findall(closing_brace_regex, line)
     return curr + len(opening) - len(closing)
 
-def get_nesting_level(file):
-    flist = open(file).readlines()
+def get_nesting_level(file_name):
+    flist = open(file_name).readlines()
     method_regex = '(if|for|while|else|switch).*\('
     parsing = False
     current_nesting_depth = 0
@@ -167,8 +166,8 @@ def get_nesting_level(file):
 # Get LCOM
 ########
 
-def get_function_strings(file):
-    flist = open(file).readlines()
+def get_method_strings(file_name):
+    flist = open(file_name).readlines()
     method_regex = '^( )*?(?:public|private|protected) \w* \w*\([^(^)^{^}]*\).*{'
 
     in_function = False
@@ -189,11 +188,60 @@ def get_function_strings(file):
                 in_function = False
     return function_list
 
-list = get_function_strings(file_name)
+list = get_method_strings(file_name)
 
 # for i in list:
 #     print i
 #     print '_______________'
+
+
+def get_code_before_first_function(file_name):
+    flist = open(file_name).readlines()
+    method_regex = '^( )*?(?:public|private|protected) \w* \w*\([^(^)^{^}]*\).*{'
+    for idx, line in enumerate(flist):
+        match = re.findall(method_regex, line);
+        if match:
+            # print(flist[:idx])
+            return flist[:idx]
+
+def get_attribute_from_row(row):
+    r = row.split(" ")
+    if r[2] == '=':
+        return r[1]
+    else:
+        return r[2][:-1]
+
+# print(get_attribute_from_row(' ScrimInsetsFrameLayout insetsFrameLayout;'))
+# print(get_attribute_from_row(' OUTSTATE_IS_DRAWER_OPENED = "isDrawerOpened";'))
+
+def get_class_attributes(file_name):
+    code_list = get_code_before_first_function(file_name)
+    code_string="".join(code_list)
+    m = re.findall('(?: )(?:\w)*(?: |=)+(?:\w|\.|\"|[0-9])*;', code_string)
+    print(len(m))
+    attributes = map(get_attribute_from_row, m)
+    return attributes
+
+# get_class_attributes(file_name)
+
+def get_sum_of_attributes_in_methods(file_name):
+    method_list = get_method_strings(file_name)
+    attribute_list = get_class_attributes(file_name)
+    sum = 0
+    print attribute_list[9]
+    print method_list[0]
+    for attribute in attribute_list:
+        for method in method_list:
+            if re.search(attribute, method):
+                sum += 1
+    return sum
+
+def get_LCOM(file_name):
+    a_sum = get_sum_of_attributes_in_methods(file_name)
+    nr_attributes = len(get_class_attributes(file_name))
+    return ((a_sum/nr_attributes)-number_of_methods)/float(1-number_of_methods)
+
+
 
 #######
 # Get RFC
@@ -241,7 +289,7 @@ print(get_column(total_lines) +
       get_column(affCoupling + effCoupling) +
       #See if there are any changes and update accordingly
       get_column(get_depth_of_inheritance_tree_local(file_name)) +
-      get_column("LCOM") +
+      get_column(get_LCOM(file_name)) +
       get_column(get_MFA(file_name)) +
       get_column(get_nesting_level(file_name)) +
       get_column(number_of_overriden_methods/number_of_methods) +
