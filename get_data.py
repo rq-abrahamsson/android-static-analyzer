@@ -23,7 +23,9 @@ def get_number_of_methods(file_name):
     number_of_methods = 0
     with open(file_name, 'r') as f:
         s = f.read()
-        matches = re.findall('(private|protected|public) \w* \w*\([^(^)^{^}]*\).*{',s)
+        method_regex = '(?: )+?(?:public|private|protected) \w* \w*\([^(^)^{^}]*\).*{'
+        matches = re.findall(method_regex,s)
+        print matches
         number_of_methods = len(matches)
     return number_of_methods
 
@@ -31,7 +33,8 @@ def get_number_of_protected_public_methods(file_name):
     number_of_methods = 0
     with open(file_name, 'r') as f:
         s = f.read()
-        matches = re.findall('(protected|public) \w* \w*\([^(^)^{^}]*\).*{',s)
+        method_regex = '(?: )+?(?:public|protected) \w* \w*\([^(^)^{^}]*\).*{'
+        matches = re.findall(method_regex,s)
         number_of_methods = len(matches)
     return number_of_methods
 
@@ -119,10 +122,82 @@ def get_MFA(file_name):
 
 # with open(file_name, 'r') as f:
 #     s = f.read()
-#     #matches = re.findall('\w* \w* \w*\([^(^)^{^}]*\).*{.*}',"".join(s.splitlines()))
-#     #matches = re.findall('*(\s*)public \w* \w* \(.*\).*(?:\n\1  .*)*\n\1\}',s)
-#     matches = re.findall('^(\s*)public.*\w*\w*\(.*\) \{\n\{\n((\t.*\n)|(^$\n))*^(\s*)\}',s)
-#     print(matches)
+#     #regex = re.compile('(^- \(.*[^;]({|\n)(.|\n)*?^})', re.MULTILINE)
+#     regex = re.compile('(?:public|private|protected) \w* \w*\([^(^)^{^}]*\).*{|\n)(.|\n)*?^})', re.MULTILINE)
+#     result = regex.match(s)
+#     print result
+#     # matches = re.findall('^(\s*)public.*\w*\w*\(.*\) \{\n\{\n((\t.*\n)|(^$\n))*^(\s*)\}',s)
+#     # print(matches)
+
+
+########
+# Get nesting
+########
+
+def update_max_nesting(curr, max):
+    if (curr > max):
+        return curr
+    return max
+
+def update_nesting(line, curr):
+    opening_brace_regex = '{'
+    closing_brace_regex = '}'
+    opening = re.findall(opening_brace_regex, line)
+    closing = re.findall(closing_brace_regex, line)
+    return curr + len(opening) - len(closing)
+
+def get_nesting_level(file):
+    flist = open(file).readlines()
+    method_regex = '(if|for|while|else|switch).*\('
+    parsing = False
+    current_nesting_depth = 0
+    max_nesting_depth = 0
+    for line in flist:
+        match = re.findall(method_regex, line);
+        if match:
+            parsing = True
+        if parsing:
+            current_nesting_depth = update_nesting(line, current_nesting_depth)
+            max_nesting_depth = update_max_nesting(current_nesting_depth, max_nesting_depth)
+            if (current_nesting_depth == 0):
+                parsing = False
+    return max_nesting_depth
+
+########
+# Get LCOM
+########
+
+def get_function_strings(file):
+    flist = open(file).readlines()
+    method_regex = '^( )*?(?:public|private|protected) \w* \w*\([^(^)^{^}]*\).*{'
+
+    in_function = False
+    current_nesting_depth = 0
+    function_list = []
+    start_row = 0
+    for idx, line in enumerate(flist):
+        match = re.findall(method_regex, line);
+        if match:
+            in_function = True
+            start_row = idx
+        if in_function:
+            current_nesting_depth = update_nesting(line, current_nesting_depth)
+            if (current_nesting_depth == 0):
+                function_rows = flist[start_row:idx+1]
+                function = "".join(function_rows)
+                function_list.append(function)
+                in_function = False
+    return function_list
+
+list = get_function_strings(file_name)
+
+# for i in list:
+#     print i
+#     print '_______________'
+
+#######
+# Get RFC
+#######
 
 def get_rfc(file_name):
     number_of_methods = 0
@@ -164,10 +239,10 @@ print(get_column(total_lines) +
       get_column(affCoupling) +
       get_column(effCoupling) +
       get_column(affCoupling + effCoupling) +
-      #See if there are any changes
-      get_column(str(get_depth_of_inheritance_tree_local(file_name))) +
+      #See if there are any changes and update accordingly
+      get_column(get_depth_of_inheritance_tree_local(file_name)) +
       get_column("LCOM") +
-      get_column("MFA: might be wrong" + str(get_MFA(file_name))) +
-      get_column("NBD nesting depht") +
+      get_column(get_MFA(file_name)) +
+      get_column(get_nesting_level(file_name)) +
       get_column(number_of_overriden_methods/number_of_methods) +
       get_column(subclasses))
