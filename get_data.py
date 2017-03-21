@@ -120,7 +120,10 @@ def get_MFA(file_name):
     base_file = get_base_class(file_name)
     inherited_methods = get_inherited_methods(base_file)
     nr = get_number_of_protected_public_methods(file_name) - get_number_of_overriden_methods(file_name)
-    return inherited_methods/float(inherited_methods+(nr))
+    if inherited_methods==0:
+        return 0
+    else:
+        return inherited_methods/float(inherited_methods+(nr))
 
 
 ########
