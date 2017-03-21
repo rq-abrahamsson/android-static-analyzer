@@ -3,7 +3,6 @@
 import re
 import sh
 import sys
-from subprocess import call
 
 if len(sys.argv) >= 4:
     code_path = sys.argv[1]
@@ -16,8 +15,10 @@ else:
 matching_import1 = 'import.*\com.sfanytime.*\;'
 matching_import2 = 'import.*\com.valtech.*\;'
 
+
 def get_float(s):
     return float(s.split(':')[1])
+
 
 def get_number_of_methods(file_name):
     number_of_methods = 0
@@ -28,6 +29,7 @@ def get_number_of_methods(file_name):
         number_of_methods = len(matches)
     return number_of_methods
 
+
 def get_number_of_protected_public_methods(file_name):
     number_of_methods = 0
     with open(file_name, 'r') as f:
@@ -36,6 +38,7 @@ def get_number_of_protected_public_methods(file_name):
         matches = re.findall(method_regex,s)
         number_of_methods = len(matches)
     return number_of_methods
+
 
 def get_number_of_overriden_methods(file_name):
     number_of_overriden_methods = 0
@@ -81,6 +84,7 @@ try:
 except sh.ErrorReturnCode_1: 
     subclasses = 0
 
+
 def get_base_class(file_name):
     with open(file_name, 'r') as f:
         s = f.read()
@@ -111,22 +115,12 @@ def get_inherited_methods(file_name):
     else:
         return nr + get_inherited_methods(base_file)
 
+
 def get_MFA(file_name):
     base_file = get_base_class(file_name)
     inherited_methods = get_inherited_methods(base_file)
     nr = get_number_of_protected_public_methods(file_name) - get_number_of_overriden_methods(file_name)
     return inherited_methods/float(inherited_methods+(nr))
-
-
-
-# with open(file_name, 'r') as f:
-#     s = f.read()
-#     #regex = re.compile('(^- \(.*[^;]({|\n)(.|\n)*?^})', re.MULTILINE)
-#     regex = re.compile('(?:public|private|protected) \w* \w*\([^(^)^{^}]*\).*{|\n)(.|\n)*?^})', re.MULTILINE)
-#     result = regex.match(s)
-#     print result
-#     # matches = re.findall('^(\s*)public.*\w*\w*\(.*\) \{\n\{\n((\t.*\n)|(^$\n))*^(\s*)\}',s)
-#     # print(matches)
 
 
 ########
@@ -138,12 +132,14 @@ def update_max_nesting(curr, max):
         return curr
     return max
 
+
 def update_nesting(line, curr):
     opening_brace_regex = '{'
     closing_brace_regex = '}'
     opening = re.findall(opening_brace_regex, line)
     closing = re.findall(closing_brace_regex, line)
     return curr + len(opening) - len(closing)
+
 
 def get_nesting_level(file_name):
     flist = open(file_name).readlines()
@@ -161,6 +157,7 @@ def get_nesting_level(file_name):
             if (current_nesting_depth == 0):
                 parsing = False
     return max_nesting_depth
+
 
 ########
 # Get LCOM
@@ -188,12 +185,6 @@ def get_method_strings(file_name):
                 in_function = False
     return function_list
 
-list = get_method_strings(file_name)
-
-# for i in list:
-#     print i
-#     print '_______________'
-
 
 def get_code_before_first_function(file_name):
     flist = open(file_name).readlines()
@@ -204,6 +195,7 @@ def get_code_before_first_function(file_name):
             # print(flist[:idx])
             return flist[:idx]
 
+
 def get_attribute_from_row(row):
     r = row.split(" ")
     if r[2] == '=':
@@ -211,30 +203,25 @@ def get_attribute_from_row(row):
     else:
         return r[2][:-1]
 
-# print(get_attribute_from_row(' ScrimInsetsFrameLayout insetsFrameLayout;'))
-# print(get_attribute_from_row(' OUTSTATE_IS_DRAWER_OPENED = "isDrawerOpened";'))
 
 def get_class_attributes(file_name):
     code_list = get_code_before_first_function(file_name)
-    code_string="".join(code_list)
+    code_string = "".join(code_list)
     m = re.findall('(?: )(?:\w)*(?: |=)+(?:\w|\.|\"|[0-9])*;', code_string)
-    print(len(m))
     attributes = map(get_attribute_from_row, m)
     return attributes
 
-# get_class_attributes(file_name)
 
 def get_sum_of_attributes_in_methods(file_name):
     method_list = get_method_strings(file_name)
     attribute_list = get_class_attributes(file_name)
     sum = 0
-    print attribute_list[9]
-    print method_list[0]
     for attribute in attribute_list:
         for method in method_list:
             if re.search(attribute, method):
                 sum += 1
     return sum
+
 
 def get_LCOM(file_name):
     a_sum = get_sum_of_attributes_in_methods(file_name)
@@ -242,10 +229,10 @@ def get_LCOM(file_name):
     return ((a_sum/nr_attributes)-number_of_methods)/float(1-number_of_methods)
 
 
-
 #######
 # Get RFC
 #######
+
 
 def get_rfc(file_name):
     number_of_methods = 0
@@ -258,24 +245,23 @@ def get_rfc(file_name):
         rfc = count-len(m)
     return rfc
 
-# average_complexity = get_float(average[0])
-# total_complexity = get_float(total[0])
-# average_lines = get_float(average[1])
-# total_lines = get_float(total[1])
-# average_comments = get_float(average[2])
-# total_comments = get_float(total[2])
 
-# print("Number of methods: " + str(number_of_methods))
-# print("# overriden methods: " + str(number_of_overriden_methods))
-# print("Efferent coupling: " + str(effCoupling))
-# print("Afferent coupling: " + str(affCoupling))
-# print("Coupling: " + str(affCoupling + effCoupling))
-# print("Subclasses: " + str(subclasses))
-# print("Depth of inheritance tree, android code base so it is wrong..: " + str(get_depth_of_inheritance_tree_local(file_name)))
-# print("MFA: " + str(get_MFA(file_name)))
+#######
+# Get remaining variables
+#######
 
+rfc = get_rfc(file_name)
+depth_of_inheritance = get_depth_of_inheritance_tree_local(file_name)
+lcom = get_LCOM(file_name)
+mfa = get_MFA(file_name)
+nesting_level = get_nesting_level(file_name)
+
+
+#######
+# Print result
+#######
 def get_column(s):
-    return str(s) + '\t'
+    return "{:0.2f}\t".format(s)
 
 print(get_column(total_lines) +
       get_column(number_of_methods) +
@@ -283,14 +269,14 @@ print(get_column(total_lines) +
       get_column(total_comments) +
       get_column(total_lines/number_of_methods) +
       get_column(total_comments/(total_comments+total_lines)) +
-      get_column(get_rfc(file_name)) +
+      get_column(rfc) +
       get_column(affCoupling) +
       get_column(effCoupling) +
       get_column(affCoupling + effCoupling) +
       #See if there are any changes and update accordingly
-      get_column(get_depth_of_inheritance_tree_local(file_name)) +
-      get_column(get_LCOM(file_name)) +
-      get_column(get_MFA(file_name)) +
-      get_column(get_nesting_level(file_name)) +
+      get_column(depth_of_inheritance) +
+      get_column(lcom) +
+      get_column(mfa) +
+      get_column(nesting_level) +
       get_column(number_of_overriden_methods/number_of_methods) +
       get_column(subclasses))
