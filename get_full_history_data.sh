@@ -15,8 +15,10 @@ git log --format="%h" $file_name > commits.txt
 python ../../android-static-analyzer/get_data.py $1 $2 $3 # get the current commit first
 
 while read p; do
-    git checkout $p $1
+    git checkout $p 2>/dev/null 1>/dev/null
     python ../../android-static-analyzer/get_data.py $1 $2 $3
 done <commits.txt
+
+git checkout develop 2>/dev/null 1>/dev/null
 
 rm commits.txt

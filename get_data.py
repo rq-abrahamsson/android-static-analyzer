@@ -24,7 +24,7 @@ def get_number_of_methods(file_name):
     number_of_methods = 0
     with open(file_name, 'r') as f:
         s = f.read()
-        method_regex = '(?: )+?(?:public|private|protected) \w* \w*\([^(^)^{^}]*\).*{'
+        method_regex = '(?: )+?(?:public|private|protected)( | \w* )\w* \w*\([^(^)^{^}]*\).*{'
         matches = re.findall(method_regex,s)
         number_of_methods = len(matches)
     return number_of_methods
@@ -34,7 +34,7 @@ def get_number_of_protected_public_methods(file_name):
     number_of_methods = 0
     with open(file_name, 'r') as f:
         s = f.read()
-        method_regex = '(?: )+?(?:public|protected) \w* \w*\([^(^)^{^}]*\).*{'
+        method_regex = '(?: )+?(?:public|protected)( | \w* )\w* \w*\([^(^)^{^}]*\).*{'
         matches = re.findall(method_regex,s)
         number_of_methods = len(matches)
     return number_of_methods
@@ -168,14 +168,14 @@ def get_nesting_level(file_name):
 
 def get_method_strings(file_name):
     flist = open(file_name).readlines()
-    method_regex = '^( )*?(?:public|private|protected) \w* \w*\([^(^)^{^}]*\).*{'
+    method_regex = '^( )*?(?:public|private|protected)( | \w* )\w* \w*\([^(^)^{^}]*\).*{'
 
     in_function = False
     current_nesting_depth = 0
     function_list = []
     start_row = 0
     for idx, line in enumerate(flist):
-        match = re.findall(method_regex, line);
+        match = re.findall(method_regex, line)
         if match:
             in_function = True
             start_row = idx
@@ -189,28 +189,47 @@ def get_method_strings(file_name):
     return function_list
 
 
-def get_code_before_first_function(file_name):
+def get_code_before_first_function_inside_class(file_name):
     flist = open(file_name).readlines()
-    method_regex = '^( )*?(?:public|private|protected) \w* \w*\([^(^)^{^}]*\).*{'
+    class_regex = 'public class '
+    method_regex = '^( )*?(?:public|private|protected)( | \w* )\w* \w*\([^(^)^{^}]*\).*{'
+    class_idx = 0
     for idx, line in enumerate(flist):
-        match = re.findall(method_regex, line);
-        if match:
-            # print(flist[:idx])
-            return flist[:idx]
+        match_class = re.findall(class_regex, line)
+        match_method = re.findall(method_regex, line)
+        if match_class:
+            class_idx = idx
+        if match_method:
+            return flist[class_idx+1:idx]
 
 
 def get_attribute_from_row(row):
-    r = row.split(" ")
-    if r[2] == '=':
+    r = row.strip().split(" ")
+    if len(r) == 2:
         return r[1]
-    else:
-        return r[2][:-1]
+    elif len(r) == 3 and r[0] == 'private':
+        return r[2]
+    elif len(r) >= 4 and r[-3] == '=':
+        return r[-4]
+    elif len(r) >= 3 and r[-2] == '=':
+        return r[-3]
+    elif len(r) >= 2 and r[-1] == '=':
+        return r[-2]
 
+    else:
+        return "..."
+
+
+def is_whitespace(x):
+    if x.isspace() or x == '':
+        return False
+    else:
+        return True
 
 def get_class_attributes(file_name):
-    code_list = get_code_before_first_function(file_name)
+    code_list = get_code_before_first_function_inside_class(file_name)
     code_string = "".join(code_list)
-    m = re.findall('(?: )(?:\w)*(?: |=)+(?:\w|\.|\"|[0-9])*;', code_string)
+    m = filter(is_whitespace, re.findall('(?:private|public|protected|\w*) (?: |\w|\<|\>|\=)*', code_string))
     attributes = map(get_attribute_from_row, m)
     return attributes
 
@@ -229,7 +248,7 @@ def get_sum_of_attributes_in_methods(file_name):
 def get_LCOM(file_name):
     a_sum = get_sum_of_attributes_in_methods(file_name)
     nr_attributes = len(get_class_attributes(file_name))
-    return ((a_sum/nr_attributes)-number_of_methods)/float(1-number_of_methods)
+    return float((a_sum/nr_attributes)-number_of_methods)/float(1-number_of_methods)
 
 
 #######
