@@ -118,6 +118,8 @@ def get_inherited_methods(file_name):
 
 def get_MFA(file_name):
     base_file = get_base_class(file_name)
+    if base_file == "":
+        return 0
     inherited_methods = get_inherited_methods(base_file)
     nr = get_number_of_protected_public_methods(file_name) - get_number_of_overriden_methods(file_name)
     if inherited_methods==0:
