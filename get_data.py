@@ -102,7 +102,7 @@ def get_base_class(file_name):
 def get_depth_of_inheritance_tree_local(file_name):
     base_file = get_base_class(file_name)
     if base_file == "":
-        return 0
+        return 1
     else:
         return 1 + get_depth_of_inheritance_tree_local(base_file)
 
