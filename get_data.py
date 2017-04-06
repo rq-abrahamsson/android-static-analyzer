@@ -73,8 +73,11 @@ with open(file_name, 'r') as f:
     effCoupling = len(matches + matches_valtech)
 
 import_regexp = "import.*\." + class_name + ";"
-matches = sh.grep("-r", import_regexp, code_path).splitlines()
-affCoupling = len(matches)
+try:
+    matches = sh.grep("-r", import_regexp, code_path).splitlines()
+    affCoupling = len(matches)
+except:
+    affCoupling = 0
 
 
 extends_regexp = "extends " + class_name + " "
@@ -89,10 +92,10 @@ def get_base_class(file_name):
     with open(file_name, 'r') as f:
         s = f.read()
         extends_regexp = "extends \w* "
-        matches = re.findall(extends_regexp, s)
-        baseClass = matches[0].split(" ")[1]
-        baseFile = sh.find(code_path, "-name", baseClass + ".java")
         try:
+            matches = re.findall(extends_regexp, s)
+            baseClass = matches[0].split(" ")[1]
+            baseFile = sh.find(code_path, "-name", baseClass + ".java")
             fileString = baseFile.splitlines()[-1]
             return fileString
         except IndexError:
@@ -250,6 +253,8 @@ def get_sum_of_attributes_in_methods(file_name):
 def get_LCOM(file_name):
     a_sum = get_sum_of_attributes_in_methods(file_name)
     nr_attributes = len(get_class_attributes(file_name))
+    if number_of_methods == 1:
+        return 1
     return float((a_sum/nr_attributes)-number_of_methods)/float(1-number_of_methods)
 
 
@@ -260,13 +265,14 @@ def get_LCOM(file_name):
 
 def get_rfc(file_name):
     number_of_methods = 0
+    rfc = 0
     with open(file_name, 'r') as f:
         s = f.read()
         m = re.findall('(?:public|private|protected) \w* \w*\([^(^)^{^}]*\).*{',s)
         methods = map(lambda x: re.findall('\w*\(',x)[0], m)
         numbers = map(lambda x: sh.grep(" " + x,file_name,'-c'), methods)
         count = reduce(lambda x, y: int(x) + int(y), numbers)
-        rfc = count-len(m)
+        rfc = int(count)-len(m)
     return rfc
 
 
